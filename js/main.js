@@ -12,6 +12,7 @@ import {
     EVENT_KEY_PRESS, EVENT_DOWNLOAD_CLICKED
 } from './view.js';
 import {config} from './config.js';
+import {loadSettings, saveSettings} from './storage.js';
 import {algorithms} from './lib/algorithms.js';
 import {buildRandom} from './lib/random.js';
 import {
@@ -71,18 +72,23 @@ window.onload = () => {
         view.setAlgorithm(model.algorithm = algorithmId);
     }
 
-    function setupAlgorithms() {
-        const shape = model.shape;
+    function isAlgorithmValidForCurrentConfig(algorithmId) {
+        const algorithm = algorithms[algorithmId];
+        return Boolean(algorithm) && algorithmId !== ALGORITHM_NONE &&
+            algorithm.metadata.shapes.includes(model.shape) &&
+            (algorithm.metadata.maskable || !isMaskAvailableForCurrentConfig());
+    }
 
+    function setupAlgorithms() {
         view.clearAlgorithms();
 
-        Object.entries(algorithms).filter(([algorithmId, algorithm]) => algorithmId !== ALGORITHM_NONE).forEach(([algorithmId, algorithm]) => {
-            if (algorithm.metadata.shapes.includes(shape) && (algorithm.metadata.maskable || !isMaskAvailableForCurrentConfig())) {
+        Object.entries(algorithms).forEach(([algorithmId, algorithm]) => {
+            if (isAlgorithmValidForCurrentConfig(algorithmId)) {
                 view.addAlgorithm(algorithm.metadata.description, algorithmId);
             }
         });
 
-        onAlgorithmChanged(config.shapes[shape].defaultAlgorithm);
+        onAlgorithmChanged(config.shapes[model.shape].defaultAlgorithm);
     }
 
     view.on(EVENT_MAZE_SHAPE_SELECTED, shapeName => {
@@ -90,6 +96,7 @@ window.onload = () => {
         setupSizeParameters();
         setupAlgorithms();
         showEmptyGrid(true);
+        persistSettings();
     });
 
     view.on(EVENT_SIZE_PARAMETER_CHANGED, data => {
@@ -97,18 +104,26 @@ window.onload = () => {
             onSizeParameterChanged(data.name, data.value);
             showEmptyGrid(true);
             setupAlgorithms();
+            persistSettings();
         }
     });
 
-    view.on(EVENT_ALGORITHM_SELECTED, onAlgorithmChanged);
+    view.on(EVENT_ALGORITHM_SELECTED, algorithmId => {
+        onAlgorithmChanged(algorithmId);
+        persistSettings();
+    });
+
+    const DELAY_INSTANT = 0,
+        DELAY_SHOW_STEPS = 5000;
 
     function setupAlgorithmDelay() {
-        view.addAlgorithmDelay('Instant Mazes', 0);
-        view.addAlgorithmDelay('Show Algorithm Steps', 5000);
+        view.addAlgorithmDelay('Instant Mazes', DELAY_INSTANT);
+        view.addAlgorithmDelay('Show Algorithm Steps', DELAY_SHOW_STEPS);
 
         view.on(EVENT_DELAY_SELECTED, algorithmDelay => {
             model.algorithmDelay = algorithmDelay;
             view.setAlgorithmDelay(algorithmDelay);
+            persistSettings();
         });
         view.setAlgorithmDelay(model.algorithmDelay);
     }
@@ -121,26 +136,90 @@ window.onload = () => {
 
         view.on(EVENT_EXITS_SELECTED, exitConfig => {
             view.setExitConfiguration(model.exitConfig = exitConfig);
+            persistSettings();
         });
         view.setExitConfiguration(model.exitConfig);
     }
 
+    const savedSettings = loadSettings();
+
+    function persistSettings() {
+        saveSettings({
+            shape: model.shape,
+            size: model.size,
+            exitConfig: model.exitConfig,
+            algorithm: model.algorithm,
+            algorithmDelay: model.algorithmDelay,
+            mask: model.mask
+        });
+    }
+
+    function applySavedSettings() {
+        if (config.shapes[savedSettings.shape]) {
+            model.shape = savedSettings.shape;
+        }
+        if (savedSettings.mask && typeof savedSettings.mask === 'object') {
+            Object.entries(savedSettings.mask).forEach(([maskKey, coords]) => {
+                if (Array.isArray(coords)) {
+                    model.mask[maskKey] = coords;
+                }
+            });
+        }
+        if ([EXITS_NONE, EXITS_VERTICAL, EXITS_HORIZONTAL, EXITS_HARDEST].includes(savedSettings.exitConfig)) {
+            model.exitConfig = savedSettings.exitConfig;
+        }
+        if ([DELAY_INSTANT, DELAY_SHOW_STEPS].includes(savedSettings.algorithmDelay)) {
+            model.algorithmDelay = savedSettings.algorithmDelay;
+        }
+    }
+
+    function applySavedSize() {
+        const parameters = config.shapes[model.shape].parameters;
+        Object.entries(parameters).forEach(([paramName, paramValues]) => {
+            const savedValue = savedSettings.size && savedSettings.size[paramName];
+            if (Number.isInteger(savedValue) && savedValue >= paramValues.min && savedValue <= paramValues.max) {
+                onSizeParameterChanged(paramName, savedValue);
+            }
+        });
+    }
+
+    function applySavedAlgorithm() {
+        if (isAlgorithmValidForCurrentConfig(savedSettings.algorithm)) {
+            onAlgorithmChanged(savedSettings.algorithm);
+        }
+    }
+
+    applySavedSettings();
     setupShapeParameter();
     setupSizeParameters();
+    applySavedSize();
     setupExitConfigs();
     setupAlgorithmDelay();
     setupAlgorithms();
+    applySavedAlgorithm();
     showEmptyGrid(true);
+
+    function computeMazeStats() {
+        let cellCount = 0, deadEndCount = 0;
+        model.maze.forEachCell(cell => {
+            cellCount++;
+            if (cell.neighbours.linkedDirections().length === 1) {
+                deadEndCount++;
+            }
+        });
+        return {cellCount, deadEndCount};
+    }
 
     function buildMazeUsingModel(overrides={}) {
         if (model.maze) {
             model.maze.dispose();
         }
 
-        const grid = Object.assign({'cellShape': model.shape}, model.size),
+        const algorithm = overrides.algorithm || model.algorithm,
+            grid = Object.assign({'cellShape': model.shape}, model.size),
             maze = buildMaze({
                 grid,
-                'algorithm':  overrides.algorithm || model.algorithm,
+                'algorithm':  algorithm,
                 'randomSeed' : model.randomSeed,
                 'element': overrides.element || document.getElementById('maze'),
                 'mask': overrides.mask || model.mask[getModelMaskKey()],
@@ -179,6 +258,7 @@ window.onload = () => {
                     if (done) {
                         clearInterval(model.runningAlgorithm.interval);
                         delete model.runningAlgorithm;
+                        model.mazeStats = computeMazeStats();
                         stateMachine.displaying();
                         resolve();
                     }
@@ -187,6 +267,7 @@ window.onload = () => {
 
         } else {
             runAlgorithm.toCompletion();
+            model.mazeStats = algorithm === ALGORITHM_NONE ? null : computeMazeStats();
             maze.render();
             return Promise.resolve();
         }
@@ -242,6 +323,7 @@ window.onload = () => {
         clearInterval(model.runningAlgorithm.interval);
         model.runningAlgorithm.run.toCompletion();
         delete model.runningAlgorithm;
+        model.mazeStats = computeMazeStats();
         stateMachine.displaying();
         model.maze.render();
     });
@@ -321,6 +403,7 @@ window.onload = () => {
             showEmptyGrid(true);
             setupAlgorithms();
             view.updateMaskButtonCaption(isMaskAvailableForCurrentConfig());
+            persistSettings();
         } catch (err) {
             alert(err);
         }

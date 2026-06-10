@@ -40,6 +40,10 @@ Normally the generator creates a completely unique random maze each time you use
 particular maze without changing the layout then just take a note of the 'Seed Value' that is displayed alongside it.
 Entering this value into the 'Seed' input field will make sure you get the same pattern again when you click the 'New Maze' button.
 
+Each generated maze is displayed together with some statistics - the number of cells it contains, and the number of dead ends.
+Your selected settings and any masks you create are saved in your browser's local storage, so they will still be there
+the next time you visit.
+
 If you make a maze that you would like to keep you can download your creation as an SVG file,
 either with or without the solution displayed.
 

@@ -2,5 +2,4 @@ TODO Later
 ----------
 Add arrows to solution path
 Split maze types into separate files
-Show maze stats/details
 Mask shift key selection

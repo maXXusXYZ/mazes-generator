@@ -266,7 +266,9 @@ export function buildView(model, stateMachine) {
         },
 
         showSeedValue() {
-            this.showInfo(`Seed Value:<br><b>${model.randomSeed}</b>`);
+            const stats = model.mazeStats,
+                statsInfo = stats ? `<br><br>Cells: <b>${stats.cellCount}</b><br>Dead Ends: <b>${stats.deadEndCount}</b>` : '';
+            this.showInfo(`Seed Value:<br><b>${model.randomSeed}</b>${statsInfo}`);
         },
         showInfo(msg) {
             toggleElementVisibility(elInfo, msg);

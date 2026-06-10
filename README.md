@@ -49,14 +49,20 @@ everything I needed to know to make this.
 ## Running Locally
 You can [try out the maze generator online here](https://codebox.net/pages/maze-generator/online). 
 If you want to run your own copy then:
-* Clone the repository, including the 'mazejs' submodule:
-      
-   `git clone --recurse-submodules git@github.com:codebox/mazes.git`
+* Clone the repository, including the 'maze.js' submodule:
 
-* Go into the 'mazes' directory:
+   `git clone --recurse-submodules https://github.com/maXXusXYZ/mazes-generator.git`
 
-    `cd mazes`
-   
+* Go into the repository directory:
+
+    `cd mazes-generator`
+
 * Start a web server at this location:
-   
-    `python3 -m http.server` 
+
+    `python3 -m http.server`
+
+* Open http://localhost:8000 in your browser
+
+If you already cloned the repository without the submodule, fetch it with:
+
+    git submodule update --init

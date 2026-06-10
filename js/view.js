@@ -68,7 +68,12 @@ export function buildView(model, stateMachine) {
     elStopButton.onclick = () => eventTarget.trigger(EVENT_STOP_BUTTON_CLICKED);
     elDownloadButton.onclick = () => eventTarget.trigger(EVENT_DOWNLOAD_CLICKED);
 
-    window.onkeydown = event => eventTarget.trigger(EVENT_KEY_PRESS, {keyCode: event.keyCode, alt: event.altKey, shift: event.shiftKey});
+    window.onkeydown = event => {
+        if (stateMachine.state === STATE_PLAYING && event.code.startsWith('Arrow')) {
+            event.preventDefault();
+        }
+        eventTarget.trigger(EVENT_KEY_PRESS, {keyCode: event.code, alt: event.altKey, shift: event.shiftKey});
+    };
 
     function fitCanvasToContainer() {
         if (isMobileLayout) {

@@ -1,7 +1,7 @@
 import {buildModel} from './model.js';
 import {buildView} from './view.js';
 import {buildMaze} from './lib/main.js';
-import {buildStateMachine, STATE_INIT, STATE_DISPLAYING, STATE_PLAYING, STATE_MASKING, STATE_DISTANCE_MAPPING, STATE_RUNNING_ALGORITHM} from './stateMachine.js';
+import {buildStateMachine, STATE_PLAYING, STATE_MASKING, STATE_DISTANCE_MAPPING} from './stateMachine.js';
 import {shapes} from './lib/shapes.js';
 import {drawingSurfaces} from './lib/drawingSurfaces.js';
 import {
@@ -33,23 +33,22 @@ window.onload = () => {
         return currentMask && currentMask.length;
     }
 
+    function onShapeSelected(shapeName) {
+        view.setShape(model.shape = shapeName);
+        view.updateMaskButtonCaption(isMaskAvailableForCurrentConfig());
+    }
+
     function setupShapeParameter() {
         Object.keys(shapes).forEach(name => {
             view.addShape(name);
         });
-
-        function onShapeSelected(shapeName) {
-            view.setShape(model.shape = shapeName);
-            view.updateMaskButtonCaption(isMaskAvailableForCurrentConfig());
-        }
         onShapeSelected(model.shape);
+    }
 
-        view.on(EVENT_MAZE_SHAPE_SELECTED, shapeName => {
-            onShapeSelected(shapeName);
-            setupSizeParameters();
-            setupAlgorithms();
-            showEmptyGrid(true);
-        });
+    function onSizeParameterChanged(name, value) {
+        model.size[name] = value;
+        view.setSizeParameter(name, value);
+        view.updateMaskButtonCaption(isMaskAvailableForCurrentConfig());
     }
 
     function setupSizeParameters() {
@@ -63,22 +62,13 @@ window.onload = () => {
             view.addSizeParameter(paramName, paramValues.min, paramValues.max);
         });
 
-        function onParameterChanged(name, value) {
-            model.size[name] = value;
-            view.setSizeParameter(name, value);
-            view.updateMaskButtonCaption(isMaskAvailableForCurrentConfig());
-        }
         Object.entries(parameters).forEach(([paramName, paramValues]) => {
-            onParameterChanged(paramName, paramValues.initial);
+            onSizeParameterChanged(paramName, paramValues.initial);
         });
+    }
 
-        view.on(EVENT_SIZE_PARAMETER_CHANGED, data => {
-            if (view.getValidSizeParameters().includes(data.name)) {
-                onParameterChanged(data.name, data.value);
-                showEmptyGrid(true);
-                setupAlgorithms();
-            }
-        });
+    function onAlgorithmChanged(algorithmId) {
+        view.setAlgorithm(model.algorithm = algorithmId);
     }
 
     function setupAlgorithms() {
@@ -92,13 +82,25 @@ window.onload = () => {
             }
         });
 
-        function onAlgorithmChanged(algorithmId) {
-            view.setAlgorithm(model.algorithm = algorithmId);
-        }
         onAlgorithmChanged(config.shapes[shape].defaultAlgorithm);
-
-        view.on(EVENT_ALGORITHM_SELECTED, onAlgorithmChanged);
     }
+
+    view.on(EVENT_MAZE_SHAPE_SELECTED, shapeName => {
+        onShapeSelected(shapeName);
+        setupSizeParameters();
+        setupAlgorithms();
+        showEmptyGrid(true);
+    });
+
+    view.on(EVENT_SIZE_PARAMETER_CHANGED, data => {
+        if (view.getValidSizeParameters().includes(data.name)) {
+            onSizeParameterChanged(data.name, data.value);
+            showEmptyGrid(true);
+            setupAlgorithms();
+        }
+    });
+
+    view.on(EVENT_ALGORITHM_SELECTED, onAlgorithmChanged);
 
     function setupAlgorithmDelay() {
         view.addAlgorithmDelay('Instant Mazes', 0);
@@ -362,9 +364,6 @@ window.onload = () => {
             model.maze.clearPathAndSolution();
             view.toggleSolveButtonCaption(true);
         } else {
-            const [startCell, endCell] = findStartAndEndCells();
-            console.assert(startCell);
-            console.assert(endCell);
             model.maze.findPathBetween(startCell.coords, endCell.coords);
             view.toggleSolveButtonCaption(false);
         }
@@ -411,19 +410,19 @@ window.onload = () => {
     });
 
     const keyCodeToDirection = {
-        38: DIRECTION_NORTH,
-        40: DIRECTION_SOUTH,
-        39: DIRECTION_EAST,
-        37: DIRECTION_WEST,
-        65: DIRECTION_NORTH_WEST, // A
-        83: DIRECTION_NORTH_EAST, // S
-        90: DIRECTION_SOUTH_WEST, // Z
-        88: DIRECTION_SOUTH_EAST, // X
-        81: DIRECTION_CLOCKWISE,  // Q
-        87: DIRECTION_ANTICLOCKWISE, // W
-        80: DIRECTION_INWARDS, // P
-        76: `${DIRECTION_OUTWARDS}_1`, // L
-        186: `${DIRECTION_OUTWARDS}_0` // ;
+        ArrowUp: DIRECTION_NORTH,
+        ArrowDown: DIRECTION_SOUTH,
+        ArrowRight: DIRECTION_EAST,
+        ArrowLeft: DIRECTION_WEST,
+        KeyA: DIRECTION_NORTH_WEST,
+        KeyS: DIRECTION_NORTH_EAST,
+        KeyZ: DIRECTION_SOUTH_WEST,
+        KeyX: DIRECTION_SOUTH_EAST,
+        KeyQ: DIRECTION_CLOCKWISE,
+        KeyW: DIRECTION_ANTICLOCKWISE,
+        KeyP: DIRECTION_INWARDS,
+        KeyL: `${DIRECTION_OUTWARDS}_1`,
+        Semicolon: `${DIRECTION_OUTWARDS}_0`
     };
 
     function padNum(num) {
@@ -507,9 +506,10 @@ window.onload = () => {
         const {keyCode, shift, alt} = event,
             direction = keyCodeToDirection[keyCode];
 
-        navigate(direction, shift, alt);
-
-        model.maze.render();
+        if (direction) {
+            navigate(direction, shift, alt);
+            model.maze.render();
+        }
     }));
 
     view.on(EVENT_DOWNLOAD_CLICKED, () => {

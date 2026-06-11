@@ -70,3 +70,14 @@ If you want to run your own copy then:
 If you already cloned the repository without the submodule, fetch it with:
 
     git submodule update --init
+
+## Deploying to Vercel
+The repository includes a `vercel.json` so it deploys as a plain static site with no build step:
+
+* Go to [vercel.com/new](https://vercel.com/new) and sign in with your GitHub account
+* Import the `mazes-generator` repository
+* Click **Deploy** - no settings need to be changed
+
+Vercel clones the `js/lib` submodule automatically because it points to a public
+repository over HTTPS. Every push to the production branch will trigger a new deployment.
+

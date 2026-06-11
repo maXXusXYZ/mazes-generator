@@ -10,7 +10,9 @@ colouring each location in the grid according how far away it is from a selected
 
 <img src="https://codebox.net/assets/images/maze-generator/maze_square_distance_map.svg" alt="Maze distance map" width="400px">
 
-The generator offers a choice of 10 different algorithms, which each produce mazes with different characteristics.
+The generator offers a choice of 12 different algorithms, which each produce mazes with different characteristics.
+On top of the original ten this fork adds Growing Tree (a configurable blend of Recursive Backtrack and Prims)
+and Recursive Division (long straight walls and a room-like structure).
 All mazes created by these algorithms are 'perfect' mazes, i.e. there is exactly one path connecting any pair of
 locations within the grid, and therefore one unique solution to each maze.
 

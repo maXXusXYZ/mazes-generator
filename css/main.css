@@ -1,152 +1,263 @@
 :root {
-    --font-colour: #444;
-    --border-colour: #222;
-    --alt-colour: #006BB7;
-    --panel-bg-colour: #EEE;
-    --small-font-size: 0.8em;
-    --wide-margin: 10px;
-    --narrow-margin: 5px;
+    --bg: #0b1220;
+    --surface: #141d31;
+    --surface-2: #1b2742;
+    --surface-3: #20304f;
+    --border: #263654;
+    --text: #e7edf8;
+    --muted: #8da3c4;
+    --accent: #38bdf8;
+    --accent-2: #2563eb;
+    --invalid: #f87171;
+    --radius: 10px;
+    --radius-lg: 14px;
+    --shadow: 0 10px 30px rgba(2, 8, 23, 0.45);
 }
 * {
-    box-sizing: border-box
+    box-sizing: border-box;
 }
 html, body {
     width: 100%;
     height: 100%;
     margin: 0;
-    font-family: sans-serif;
-    color: var(--font-colour);
+}
+body {
+    font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text);
+    background:
+        radial-gradient(1100px 600px at 85% -10%, rgba(56, 189, 248, 0.12), transparent 60%),
+        radial-gradient(900px 500px at -10% 110%, rgba(37, 99, 235, 0.12), transparent 60%),
+        var(--bg);
+    background-attachment: fixed;
 }
 #container {
     display: flex;
     flex-direction: row;
+    gap: 16px;
     height: 100%;
-    padding: var(--wide-margin);
+    padding: 16px;
+}
+
+/* Maze canvas sits on a light card because the maze renders white cells with dark walls */
+#mazeContainer {
+    flex: 1 1 auto;
+    min-width: 0;
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+#maze {
+    display: block;
+}
+
+/* Sidebar */
+#sidebarContainer {
+    flex: 0 0 280px;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    overflow-y: auto;
+    user-select: none;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+}
+#sidebarContainer::-webkit-scrollbar {
+    width: 8px;
+}
+#sidebarContainer::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+/* Title */
+.title {
+    text-align: center;
+    padding: 6px 0 14px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+}
+h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+.title a, .title a:visited {
+    font-size: 0.75rem;
+    color: var(--accent);
+    text-decoration: none;
+}
+.title a:hover {
+    text-decoration: underline;
 }
 #mobileTitle {
     display: none;
 }
-#mazeContainer {
-    flex: 1 1 auto;
-    min-width: 0;
-}
-#sidebarContainer {
-    flex: 0 0 220px;
-    padding: var(--narrow-margin);
-    border: 1px solid var(--border-colour);
-    overflow-y: auto;
-    user-select: none;
-}
-#info{
-    user-select: text;
-}
-#sidebarContainer li.selected, p.selected {
-    background-color: var(--alt-colour);
-    color: white;
-}
-#sidebarContainer div, .title {
-    border: 1px solid var(--border-colour);
-    background-color: var(--panel-bg-colour);
-    border-radius: 3px;
-}
-.title {
-    text-align: center;
-    padding: 15px 0;
-    margin-bottom: var(--wide-margin);
-}
-h1 {
-    margin: 0;
-    font-weight:normal;
-    font-size: 1.5em;
-}
-.title a {
-    font-size: var(--small-font-size);
-}
-.title a, .title a:visited {
-    color: var(--alt-colour);
-}
-button, li, .selectable {
-    cursor: pointer;
-}
-li, #applyMask p {
-    padding: 2px 5px;
-}
+
+/* Option lists */
 #sidebarContainer ul {
-    border: 1px solid var(--border-colour);
-    padding: var(--narrow-margin) 0;
-    list-style-type: none;
-    font-size: var(--small-font-size);
-    background-color: var(--panel-bg-colour);
-    border-radius: 3px;
-    margin: var(--narrow-margin) 0;
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
 }
-#applyMask {
-    padding: var(--narrow-margin) 0;
-    font-size: var(--small-font-size);
-    margin: var(--narrow-margin) 0;
-}
-#applyMask p {
-    margin: 0;
-}
-button {
+#sidebarContainer ul::before {
     display: block;
-    width: 100%;
-    background-color: var(--panel-bg-colour);
-    margin: 5px 0;
-    border: 1px solid var(--border-colour);
-    border-radius: 3px;
-    padding: var(--narrow-margin) 0;
-    font-size: 1em;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    padding: 2px 6px 8px;
 }
-#go {
-    font-weight: bold;
+#shapeSelector::before     { content: 'Shape'; }
+#sizeParameters::before    { content: 'Size'; }
+#seedParameters::before    { content: 'Seed'; }
+#delaySelector::before     { content: 'Generation'; }
+#exitSelector::before      { content: 'Entrance & Exit'; }
+#algorithmSelector::before { content: 'Algorithm'; }
+
+#sidebarContainer li {
+    padding: 7px 10px;
+    margin: 2px 0;
+    border-radius: 7px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
 }
-#maskNotSupported, #info {
-    text-align: center;
+#sidebarContainer li:hover {
+    background: rgba(56, 189, 248, 0.12);
 }
-div#info, div#details {
-    margin-top: var(--wide-margin);
-    background-color: white;
-    padding: var(--wide-margin);
-}
-div#details em {
-    font-style: normal;
-    color: var(--alt-colour);
-}
-ul label {
-    display: inline-block;
-    width: 50px;
+#sidebarContainer li.selected {
+    background: linear-gradient(135deg, var(--accent-2), var(--accent));
+    color: white;
+    font-weight: 600;
 }
 #shapeSelector li, #sizeParameters label {
     text-transform: capitalize;
 }
-#seedInput {
-    width: 100px;
+
+/* Input rows */
+#sizeParameters li, #seedParameters li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: default;
+}
+#sizeParameters li:hover, #seedParameters li:hover {
+    background: transparent;
+}
+ul label {
+    flex: 0 0 52px;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+#sidebarContainer input {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    padding: 6px 8px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+#sidebarContainer input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+}
+#sidebarContainer input:invalid {
+    border-color: var(--invalid);
+}
+#sidebarContainer input::placeholder {
+    color: var(--muted);
+}
+
+/* Buttons */
+button {
+    display: block;
+    width: 100%;
+    margin: 8px 0;
+    padding: 9px 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--text);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.05s ease;
+}
+button:hover {
+    border-color: var(--accent);
+    background: var(--surface-3);
+}
+button:active {
+    transform: translateY(1px);
+}
+#go {
+    padding: 11px 12px;
+    background: linear-gradient(135deg, var(--accent-2), var(--accent));
+    border: none;
+    color: white;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+}
+#go:hover {
+    filter: brightness(1.1);
 }
 #play, #changeParams {
-    margin-top: var(--wide-margin);
+    margin-top: 14px;
 }
-@media screen and (max-width: 500px) {
+
+/* Info panel */
+#info {
+    margin-top: 12px;
+    padding: 12px;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    text-align: center;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    user-select: text;
+}
+#info b, #info em {
+    font-style: normal;
+    color: var(--accent);
+}
+
+@media screen and (max-width: 560px) {
     #container {
         flex-direction: column;
         height: auto;
-    }
-    #mazeContainer {
-        margin-bottom: 10px;
-    }
-    #maze {
-        margin: 0 auto;
-        display: block;
-    }
-    .title {
-        display: none;
+        gap: 12px;
+        padding: 12px;
     }
     #mobileTitle {
         display: block;
-        padding: 5px;
+        padding: 10px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-lg);
+    }
+    #mobileTitle h1 {
+        text-align: center;
     }
     #sidebarContainer {
         flex: none;
-        overflow: auto;
+        overflow: visible;
     }
 }

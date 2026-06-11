@@ -13,6 +13,7 @@ import {
 } from './view.js';
 import {config} from './config.js';
 import {loadSettings, saveSettings} from './storage.js';
+import {isExtraAlgorithm, attachExtraAlgorithm} from './extraAlgorithms.js';
 import {algorithms} from './lib/algorithms.js';
 import {buildRandom} from './lib/random.js';
 import {
@@ -219,12 +220,16 @@ window.onload = () => {
             grid = Object.assign({'cellShape': model.shape}, model.size),
             maze = buildMaze({
                 grid,
-                'algorithm':  algorithm,
+                'algorithm':  isExtraAlgorithm(algorithm) ? ALGORITHM_NONE : algorithm,
                 'randomSeed' : model.randomSeed,
                 'element': overrides.element || document.getElementById('maze'),
                 'mask': overrides.mask || model.mask[getModelMaskKey()],
                 'exitConfig': overrides.exitConfig || model.exitConfig
             });
+
+        if (isExtraAlgorithm(algorithm)) {
+            attachExtraAlgorithm(maze, algorithm, model.randomSeed);
+        }
 
         model.maze = maze;
 
